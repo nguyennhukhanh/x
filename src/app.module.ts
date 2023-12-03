@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { load } from './configs';
 import { BotModule } from './modules/bot/bot.module';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { DiscordModule } from './modules/discord/discord.module';
-import { load } from './configs';
+import { WebhookModule } from './modules/webhook/webhook.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { load } from './configs';
     BotModule,
     TelegramModule,
     DiscordModule,
+    WebhookModule,
   ],
 })
 export class AppModule {}

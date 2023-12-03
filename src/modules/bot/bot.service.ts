@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 
-const logger = new Logger('BOT');
+const logger = new Logger('GPTBot');
 
 @Injectable()
 export class BotService {

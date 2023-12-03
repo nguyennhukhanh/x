@@ -1,7 +1,14 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { exec } = require('child_process');
 
-// Input: node init-nest.js [name]
+/**
+ * @input: yarn generate:module [name] OR node nest-generate-module.js [name].
+ *         The [name] parameter is the desired name for the service, module, and controller.
+ * @output: creates a new service, module, and controller with the given name
+ * @return: returns an error message if there is an error, otherwise returns the stdout
+ * @example: yarn generate:module user
+ * @example: node nest-generate-module.js user
+ */
 const name = process.argv[2];
 if (!name) {
   console.warn(
