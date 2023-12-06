@@ -6,6 +6,10 @@
 - [Telegram](https://core.telegram.org/bots/api) is an HTTP-based interface created for developers keen on building bots for Telegram.
 - [Discord](https://discord.js.org/docs/packages/discord.js/main) is a powerful Node.js module that allows you to easily interact with the Discord API.
 
+# How to add bot
+- Telegram: https://telegram.me/huyeny_bot?startgroup=true
+- Discord: https://discord.com/api/oauth2/authorize?client_id=1156795314389393489&permissions=8&scope=bot
+
 # Installation
 
 ```bash
