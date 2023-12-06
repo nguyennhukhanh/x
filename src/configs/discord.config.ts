@@ -1,5 +1,6 @@
 import { registerAs } from '@nestjs/config';
 
 export default registerAs('discord', () => ({
-  discordPrivateKey: process.env.DISCORD_PRIVATE_KEY,
+  discordClientSecret: process.env.DISCORD_CLIENT_SECRET,
+  discordBotMessage: process.env.DISCORD_BOT_MESSAGE,
 }));
