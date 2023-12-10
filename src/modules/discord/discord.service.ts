@@ -76,31 +76,6 @@ export class DiscordService {
           },
         ],
       });
-      this.client = new Client({
-        intents: [
-          GatewayIntentBits.Guilds,
-          GatewayIntentBits.GuildMembers,
-          GatewayIntentBits.GuildMessages,
-          GatewayIntentBits.MessageContent,
-          GatewayIntentBits.GuildPresences,
-        ],
-      });
-
-      this.client.on(Events.ClientReady, () => {
-        logger.log(`Bot is ready! Logged in as ${this.client.user?.tag}!`);
-        this.client.application.commands.create({
-          name: 'image',
-          description: 'Generate an image by text',
-          options: [
-            {
-              name: 'text',
-              type: ApplicationCommandOptionType.String,
-              description: 'Thanks to the bot to create images from text',
-              required: true,
-            },
-          ],
-        });
-      });
     });
 
     this.client.on(Events.MessageCreate, (msg) => {
