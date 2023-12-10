@@ -8,26 +8,36 @@ import {
   Events,
   Interaction,
   CacheType,
+  ApplicationCommandOptionType,
+  BaseMessageOptions,
+  MessagePayload,
 } from 'discord.js';
+import { translate } from '@vitalets/google-translate-api';
 
 import { BotService } from '../bot/bot.service';
+import { TextToImageService } from '../bot/text-to-image.service';
 
 const logger = new Logger('DiscordBot');
 
 @Injectable()
 export class DiscordService {
+  private backendUrl: string;
   private client: Client;
   private discordClientSecret: string;
   private discordBotMessage: string;
-
   constructor(
     private configService: ConfigService,
     private readonly botService: BotService,
+    private readonly textToImageService: TextToImageService,
   ) {
     this._setup();
   }
 
   async _setup() {
+    this.backendUrl = this.configService.get('backend.backendUrl', {
+      infer: true,
+    }) as string;
+
     this.discordClientSecret = this.configService.get(
       'discord.discordClientSecret',
       {
@@ -54,6 +64,43 @@ export class DiscordService {
 
     this.client.on(Events.ClientReady, () => {
       logger.log(`Bot is ready! Logged in as ${this.client.user?.tag}!`);
+      this.client.application.commands.create({
+        name: 'image',
+        description: 'Generate an image by text',
+        options: [
+          {
+            name: 'text',
+            type: ApplicationCommandOptionType.String,
+            description: 'Thanks to the bot to create images from text',
+            required: true,
+          },
+        ],
+      });
+      this.client = new Client({
+        intents: [
+          GatewayIntentBits.Guilds,
+          GatewayIntentBits.GuildMembers,
+          GatewayIntentBits.GuildMessages,
+          GatewayIntentBits.MessageContent,
+          GatewayIntentBits.GuildPresences,
+        ],
+      });
+
+      this.client.on(Events.ClientReady, () => {
+        logger.log(`Bot is ready! Logged in as ${this.client.user?.tag}!`);
+        this.client.application.commands.create({
+          name: 'image',
+          description: 'Generate an image by text',
+          options: [
+            {
+              name: 'text',
+              type: ApplicationCommandOptionType.String,
+              description: 'Thanks to the bot to create images from text',
+              required: true,
+            },
+          ],
+        });
+      });
     });
 
     this.client.on(Events.MessageCreate, (msg) => {
@@ -120,8 +167,63 @@ export class DiscordService {
   async handleStartCommand(interaction: Interaction<CacheType>) {
     if (!interaction.isChatInputCommand()) return;
 
-    if (interaction.commandName === 'start' || 'name' || 'hello') {
+    if (
+      interaction.commandName === 'hello' ||
+      interaction.commandName === 'start' ||
+      interaction.commandName === 'name'
+    ) {
       await interaction.reply(this.discordBotMessage);
+      return;
+    }
+
+    // Method 1: Send image address
+    // if (interaction.commandName === 'image') {
+    //   const question = interaction.options.getString('text');
+
+    //   // Defer the reply
+    //   await interaction.deferReply();
+
+    //   // Translate
+    //   const { text } = await translate(question, { to: 'en' });
+
+    //   const { imageName, imagePath } = await this.textToImageService.ask(text);
+
+    //   let replyContent;
+    //   if (imageName === null) {
+    //     replyContent = 'Sorry, I was unable to generate the image.';
+    //   } else {
+    //     const imageUrl = this.backendUrl + '/' + imageName;
+    //     replyContent = { content: imageUrl, ephemeral: true };
+    //   }
+
+    //   // Edit the reply
+    //   await interaction.editReply(replyContent);
+    //   return;
+    // }
+
+    // Method 2: Send image
+    if (interaction.commandName === 'image') {
+      const question = interaction.options.getString('text');
+
+      // Translate
+      const { text } = await translate(question, { to: 'en' });
+      await interaction.deferReply();
+
+      const { imageName, imagePath } = await this.textToImageService.ask(text);
+
+      const options: BaseMessageOptions = {
+        files: [
+          {
+            attachment: imagePath,
+            name: imageName,
+          },
+        ],
+      };
+
+      const payload = new MessagePayload(interaction, options);
+
+      await interaction.editReply(payload);
+      return;
     }
   }
 }
