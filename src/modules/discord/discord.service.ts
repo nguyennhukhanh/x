@@ -34,7 +34,7 @@ export class DiscordService {
   }
 
   async _setup() {
-    this.backendUrl = this.configService.get('backend.backendUrl', {
+    this.backendUrl = this.configService.get('app.backendUrl', {
       infer: true,
     }) as string;
 
@@ -161,19 +161,26 @@ export class DiscordService {
     //   // Translate
     //   const { text } = await translate(question, { to: 'en' });
 
-    //   const { imageName, imagePath } = await this.textToImageService.ask(text);
+    //   const result = await this.textToImageService.ask(text);
+    //   if (result) {
+    //     const { imageName } = result;
+    //     let replyContent;
+    //     if (imageName === null) {
+    //       replyContent = 'Sorry, I was unable to generate the image.';
+    //     } else {
+    //       const imageUrl = this.backendUrl + '/' + imageName;
+    //       replyContent = { content: imageUrl, ephemeral: true };
+    //     }
 
-    //   let replyContent;
-    //   if (imageName === null) {
-    //     replyContent = 'Sorry, I was unable to generate the image.';
+    //     // Edit the reply
+    //     await interaction.editReply(replyContent);
+    //     return;
     //   } else {
-    //     const imageUrl = this.backendUrl + '/' + imageName;
-    //     replyContent = { content: imageUrl, ephemeral: true };
+    //     await interaction.editReply(
+    //       'Sorry, I was unable to generate the image.',
+    //     );
+    //     return;
     //   }
-
-    //   // Edit the reply
-    //   await interaction.editReply(replyContent);
-    //   return;
     // }
 
     // Method 2: Send image
@@ -184,21 +191,28 @@ export class DiscordService {
       const { text } = await translate(question, { to: 'en' });
       await interaction.deferReply();
 
-      const { imageName, imagePath } = await this.textToImageService.ask(text);
+      const result = await this.textToImageService.ask(text);
+      if (result) {
+        const { imageName, imagePath } = result;
+        const options: BaseMessageOptions = {
+          files: [
+            {
+              attachment: imagePath,
+              name: imageName,
+            },
+          ],
+        };
 
-      const options: BaseMessageOptions = {
-        files: [
-          {
-            attachment: imagePath,
-            name: imageName,
-          },
-        ],
-      };
+        const payload = new MessagePayload(interaction, options);
 
-      const payload = new MessagePayload(interaction, options);
-
-      await interaction.editReply(payload);
-      return;
+        await interaction.editReply(payload);
+        return;
+      } else {
+        await interaction.editReply(
+          'Sorry, I was unable to generate the image.',
+        );
+        return;
+      }
     }
   }
 }

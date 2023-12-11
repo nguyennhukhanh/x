@@ -32,6 +32,7 @@ export class TelegramService {
       },
     ) as string;
 
+    // Method 1: Use Polling
     this.telegramBot = new TelegramBot(botToken, { polling: true });
 
     this.telegramBot.on(Events.PollingError, (error) => {
@@ -53,6 +54,18 @@ export class TelegramService {
     this.telegramBot.onText(/\/start/, (msg) => {
       this.handleEvent(() => this.handleStartCommand(msg));
     });
+
+    /**
+     * Method 2: Use Webhook
+    const backendUrl = this.configService.get('app.backendUrl', {
+      infer: true,
+    });
+    this.telegramBot = new TelegramBot(botToken, { webHook: true });
+    this.telegramBot.setWebHook(`${backendUrl}/webhook/telegram`);
+    this.telegramBot.on('webhook_error', (error) => {
+      logger.error('Webhook Error', error);
+    });
+     */
   }
 
   handleEvent = (_cb: () => void) => {
