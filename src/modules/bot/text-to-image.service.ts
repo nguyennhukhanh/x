@@ -16,9 +16,15 @@ export class TextToImageService {
   private apiKey: string;
 
   constructor(private configService: ConfigService) {
+    this._init();
+  }
+
+  _init(): void {
     this.engineId = this.configService.get('painter.painterEngineId');
     this.apiHost = this.configService.get('painter.painterApiHost');
     this.apiKey = this.configService.get('painter.painterApiKey');
+
+    logger.log('Painter is ready!');
   }
 
   async ask(

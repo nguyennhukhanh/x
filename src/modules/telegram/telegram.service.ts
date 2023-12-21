@@ -2,8 +2,9 @@ import { ConfigService } from '@nestjs/config';
 import { Injectable, Logger } from '@nestjs/common';
 import * as TelegramBot from 'node-telegram-bot-api';
 
-import { BotService } from '../bot/bot.service';
-import { Events } from '../../utils/constants/common.enum';
+// import { GPTService } from '../bot/gpt.service';
+// import { Events } from '../../utils/constants/common.enum';
+import { GeminiService } from '../bot/gemini.service';
 
 const logger = new Logger('TelegramBot');
 
@@ -15,11 +16,12 @@ export class TelegramService {
 
   constructor(
     private configService: ConfigService,
-    private readonly botService: BotService,
+    // private readonly gptService: GPTService,
+    private readonly geminiService: GeminiService,
   ) {
-    this._setup();
+    this._init();
   }
-  async _setup() {
+  async _init(): Promise<void> {
     const botToken = this.configService.get('telegram.telegramBotToken', {
       infer: true,
     }) as string;
@@ -32,7 +34,8 @@ export class TelegramService {
       },
     ) as string;
 
-    // Method 1: Use Polling
+    /**
+     * Method 1: Use Polling
     this.telegramBot = new TelegramBot(botToken, { polling: true });
 
     this.telegramBot.on(Events.PollingError, (error) => {
@@ -54,9 +57,9 @@ export class TelegramService {
     this.telegramBot.onText(/\/start/, (msg) => {
       this.handleEvent(() => this.handleStartCommand(msg));
     });
+    */
 
-    /**
-     * Method 2: Use Webhook
+    // Method 2: Use Webhook
     const backendUrl = this.configService.get('app.backendUrl', {
       infer: true,
     });
@@ -65,7 +68,8 @@ export class TelegramService {
     this.telegramBot.on('webhook_error', (error) => {
       logger.error('Webhook Error', error);
     });
-     */
+
+    logger.log('Telegram is ready!');
   }
 
   handleEvent = (_cb: () => void) => {
@@ -113,11 +117,16 @@ export class TelegramService {
 
   handleAsk = async ({ chat, text }: TelegramBot.Message) => {
     const userQuestion = text;
-    if (!userQuestion) return;
+    if (!userQuestion || chat.username.includes('_bot')) return;
 
     const chatId = chat.id;
 
-    const answer = await this.botService.ask(userQuestion);
+    // Method 1: Using GPT Bot
+    // const answer = await this.gptService.ask(userQuestion);
+
+    // Method 2: Using Gemini Bot
+    const answer = await this.geminiService.ask(userQuestion);
+
     try {
       await this.telegramBot.sendMessage(chatId, answer, {
         parse_mode: 'Markdown',
