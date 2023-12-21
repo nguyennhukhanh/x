@@ -14,8 +14,9 @@ import {
 } from 'discord.js';
 import { translate } from '@vitalets/google-translate-api';
 
-import { BotService } from '../bot/bot.service';
+// import { GPTService } from '../bot/gpt.service';
 import { TextToImageService } from '../bot/text-to-image.service';
+import { GeminiService } from '../bot/gemini.service';
 
 const logger = new Logger('DiscordBot');
 
@@ -27,13 +28,14 @@ export class DiscordService {
   private discordBotMessage: string;
   constructor(
     private configService: ConfigService,
-    private readonly botService: BotService,
+    // private readonly gptService: GPTService,
+    private readonly geminiService: GeminiService,
     private readonly textToImageService: TextToImageService,
   ) {
-    this._setup();
+    this._init();
   }
 
-  async _setup() {
+  async _init(): Promise<void> {
     this.backendUrl = this.configService.get('app.backendUrl', {
       infer: true,
     }) as string;
@@ -97,6 +99,8 @@ export class DiscordService {
     });
 
     this.client.login(this.discordClientSecret);
+
+    logger.log('Discord is ready!');
   }
 
   handleMessage = async ({ author, content, channel }: Message) => {
@@ -104,7 +108,11 @@ export class DiscordService {
       return;
     }
 
-    const answer = await this.botService.ask(content);
+    // Method 1: Using GPT Bot
+    // const answer = await this.gptService.ask(content);
+
+    // Method 2: Using Gemini Bot
+    const answer = await this.geminiService.ask(content);
 
     channel.send(answer);
   };
