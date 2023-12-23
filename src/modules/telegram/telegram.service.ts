@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as TelegramBot from 'node-telegram-bot-api';
 
 // import { GPTService } from '../bot/gpt.service';
-// import { Events } from '../../utils/constants/common.enum';
+import { Events } from '../../utils/constants/common.enum';
 import { GeminiService } from '../bot/gemini.service';
 
 const logger = new Logger('TelegramBot');
@@ -34,8 +34,7 @@ export class TelegramService {
       },
     ) as string;
 
-    /**
-     * Method 1: Use Polling
+    // Method 1: Use Polling
     this.telegramBot = new TelegramBot(botToken, { polling: true });
 
     this.telegramBot.on(Events.PollingError, (error) => {
@@ -57,9 +56,9 @@ export class TelegramService {
     this.telegramBot.onText(/\/start/, (msg) => {
       this.handleEvent(() => this.handleStartCommand(msg));
     });
-    */
 
-    // Method 2: Use Webhook
+    /**
+     *  Method 2: Use Webhook
     const backendUrl = this.configService.get('app.backendUrl', {
       infer: true,
     });
@@ -68,6 +67,7 @@ export class TelegramService {
     this.telegramBot.on('webhook_error', (error) => {
       logger.error('Webhook Error', error);
     });
+    */
 
     logger.log('Telegram is ready!');
   }
@@ -115,9 +115,11 @@ export class TelegramService {
     this.telegramBot.sendMessage(chatId, message);
   };
 
-  handleAsk = async ({ chat, text }: TelegramBot.Message) => {
+  handleAsk = async ({ chat, text, from }: TelegramBot.Message) => {
     const userQuestion = text;
-    if (!userQuestion || chat.username.includes('_bot')) return;
+    if (!userQuestion) return;
+    if (from.is_bot) return;
+    if (userQuestion.startsWith('/')) return;
 
     const chatId = chat.id;
 

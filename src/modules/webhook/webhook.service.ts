@@ -4,7 +4,7 @@ import type { Update } from 'node-telegram-bot-api';
 
 import { TelegramService } from '../telegram/telegram.service';
 
-const logger = new Logger('DiscordBot');
+const logger = new Logger('WebhookTelegram');
 
 @Injectable()
 export class WebhookService {
