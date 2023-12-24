@@ -114,7 +114,17 @@ export class DiscordService {
     // Method 2: Using Gemini Bot
     const answer = await this.geminiService.ask(content);
 
-    channel.send(answer);
+    if (answer.length > 2000) {
+      // Split the answer into chunks of 2000 characters
+      const chunks = answer.match(/.{1,2000}/g);
+
+      // Send each chunk as a separate message
+      for (const chunk of chunks) {
+        channel.send(chunk);
+      }
+    } else {
+      channel.send(answer);
+    }
   };
 
   handleNewMemberJoined({ user, guild }: GuildMember) {
