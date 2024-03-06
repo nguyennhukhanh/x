@@ -1,17 +1,17 @@
-import { ConfigFactory } from '@nestjs/config';
+import type { ConfigFactory } from '@nestjs/config';
 
-import gpt from './gpt.config';
-import gemini from './gemini.config';
-import telegram from './telegram.config';
 import discord from './discord.config';
+import firebase from './firebase.config';
+import gemini from './gemini.config';
+import main from './main.config';
 import painter from './painter.config';
-import backend from './backend.config';
+import telegram from './telegram.config';
 
 export const load: ConfigFactory[] = [
-  backend,
-  gpt,
+  main,
   gemini,
   painter,
   telegram,
   discord,
+  firebase,
 ];

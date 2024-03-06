@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { DiscordService } from './discord.service';
 
 import { BotModule } from '../bot/bot.module';
+import { DiscordService } from './discord.service';
 
 @Module({
   imports: [BotModule],

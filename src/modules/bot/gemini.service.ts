@@ -1,14 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import type { GenerativeModel } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { getLogger } from 'src/utils/logger';
 
-import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
-
-const logger = new Logger('Gemini');
+const logger = getLogger('Gemini');
 
 @Injectable()
 export class GeminiService {
   private geminiKey: string;
-  private geminiModel: string;
+  private model: string;
 
   private genAI: GoogleGenerativeAI;
   private bot: GenerativeModel;
@@ -17,13 +18,13 @@ export class GeminiService {
   }
 
   _init(): void {
-    this.geminiKey = this.configService.get('gemini.geminiPrivateKey');
-    this.geminiModel = this.configService.get('gemini.geminiModel');
+    this.geminiKey = this.configService.get('gemini.privateKey');
+    this.model = this.configService.get('gemini.model');
 
     this.genAI = new GoogleGenerativeAI(this.geminiKey);
-    this.bot = this.genAI.getGenerativeModel({ model: this.geminiModel });
+    this.bot = this.genAI.getGenerativeModel({ model: this.model });
 
-    logger.log('Gemini is ready!');
+    logger.info('Gemini is ready!');
   }
 
   async ask(question: string): Promise<string> {
