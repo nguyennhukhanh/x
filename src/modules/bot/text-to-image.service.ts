@@ -1,13 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import fetch from 'node-fetch';
-import * as fs from 'fs';
-import * as path from 'path';
+import { FirebaseStorageService } from 'src/services/firebase_storage.service';
+import { getLogger } from 'src/utils/logger';
+import { v4 as uuidv4 } from 'uuid';
 
-import { GenerationResponse } from '../../utils/interfaces/generation-response.interface';
-import generateRandomString from '../../common/functions/helper';
+import type { IGenerationResponse } from '../../shared/interfaces/generation_response.interface';
 
-const logger = new Logger('PainterBot');
+const logger = getLogger('PainterBot');
 
 @Injectable()
 export class TextToImageService {
@@ -15,21 +15,24 @@ export class TextToImageService {
   private apiHost: string;
   private apiKey: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private fileService: FirebaseStorageService,
+  ) {
     this._init();
   }
 
   _init(): void {
-    this.engineId = this.configService.get('painter.painterEngineId');
-    this.apiHost = this.configService.get('painter.painterApiHost');
-    this.apiKey = this.configService.get('painter.painterApiKey');
+    this.engineId = this.configService.get('painter.engineId');
+    this.apiHost = this.configService.get('painter.apiHost');
+    this.apiKey = this.configService.get('painter.apiKey');
 
-    logger.log('Painter is ready!');
+    logger.info('Painter is ready!');
   }
 
   async ask(
     question: string,
-  ): Promise<{ imageName: string; imagePath: string }> {
+  ): Promise<{ imageName: string; imageUrl: string }> {
     try {
       if (!this.apiKey) throw new Error('Missing API key.');
 
@@ -61,36 +64,29 @@ export class TextToImageService {
         throw new Error(`Non-200 response: ${await response.text()}`);
       }
 
-      const responseJSON = (await response.json()) as GenerationResponse;
-      let imagePath = '';
-      let imageName = '';
+      const responseJSON = (await response.json()) as IGenerationResponse;
 
-      const writePromises = responseJSON.artifacts.map(async (image, index) => {
-        const dir = path.join(__dirname, '../../../out');
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
-        }
-        const characters = await generateRandomString(5);
-        imageName = `huyeny-img-${characters}-${index}.png`;
-        imagePath = path.join(dir, imageName);
+      const characters = await uuidv4();
+      const originalname = `huyeny-img-${characters}.png`;
+      let imageUrl = '';
 
-        return new Promise<void>((resolve, reject) => {
-          fs.writeFile(
-            imagePath,
-            Buffer.from(image.base64, 'base64'),
-            (err) => {
-              if (err) reject(err);
-              else resolve();
-            },
-          );
-        });
-      });
+      const uploadPromises = responseJSON.artifacts.map(
+        async (image, index) => {
+          const file = {
+            originalname,
+            buffer: Buffer.from(image.base64, 'base64'),
+            mimetype: 'image/png',
+          } as any;
 
-      await Promise.all(writePromises);
+          imageUrl = await this.fileService.uploadFile(file);
+        },
+      );
+
+      await Promise.all(uploadPromises);
 
       return {
-        imageName,
-        imagePath,
+        imageName: originalname,
+        imageUrl,
       };
     } catch (error) {
       logger.error(error);

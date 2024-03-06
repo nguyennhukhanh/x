@@ -1,18 +1,19 @@
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Injectable, Logger } from '@nestjs/common';
 import * as TelegramBot from 'node-telegram-bot-api';
+import { Events } from 'src/shared/enums';
+import { getLogger } from 'src/utils/logger';
 
 // import { GPTService } from '../bot/gpt.service';
-import { Events } from '../../utils/constants/common.enum';
 import { GeminiService } from '../bot/gemini.service';
 
-const logger = new Logger('TelegramBot');
+const logger = getLogger('TelegramBot');
 
 @Injectable()
 export class TelegramService {
   private telegramBot: TelegramBot;
   private telegramBotId: string;
-  private telegramBotMessage: string;
+  private message: string;
 
   constructor(
     private configService: ConfigService,
@@ -22,23 +23,21 @@ export class TelegramService {
     this._init();
   }
   async _init(): Promise<void> {
-    const botToken = this.configService.get('telegram.telegramBotToken', {
+    const botToken = this.configService.get('telegram.token', {
       infer: true,
     }) as string;
     this.telegramBotId = botToken.split(':')[0];
 
-    this.telegramBotMessage = this.configService.get(
-      'telegram.telegramBotMessage',
-      {
-        infer: true,
-      },
-    ) as string;
+    this.message = this.configService.get('telegram.message', {
+      infer: true,
+    }) as string;
 
     // Method 1: Use Polling
     this.telegramBot = new TelegramBot(botToken, { polling: true });
 
     this.telegramBot.on(Events.PollingError, (error) => {
-      logger.error('Polling Error', error);
+      logger.error('Polling Error');
+      logger.error(error);
     });
 
     this.telegramBot.on(Events.NewChatMembers, async (msg) => {
@@ -69,7 +68,7 @@ export class TelegramService {
     });
     */
 
-    logger.log('Telegram is ready!');
+    logger.info('Telegram is ready!');
   }
 
   handleEvent = (_cb: () => void) => {
@@ -86,7 +85,7 @@ export class TelegramService {
 
     for (const newMember of newMembers) {
       if (String(newMember.id) === this.telegramBotId) {
-        const message = this.telegramBotMessage;
+        const message = this.message;
         this.telegramBot.sendMessage(chatId, message);
       } else {
         const fullName = `${newMember.first_name} ${newMember.last_name}`;
@@ -148,7 +147,7 @@ export class TelegramService {
 
   handleStartCommand = ({ chat }: TelegramBot.Message) => {
     const chatId = chat.id;
-    const message = this.telegramBotMessage;
+    const message = this.message;
 
     this.telegramBot.sendMessage(chatId, message);
   };

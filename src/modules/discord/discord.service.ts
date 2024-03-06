@@ -1,31 +1,28 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  Client,
-  Message,
-  GuildMember,
-  GatewayIntentBits,
-  Events,
-  Interaction,
-  CacheType,
-  ApplicationCommandOptionType,
-  BaseMessageOptions,
-  MessagePayload,
-} from 'discord.js';
 import { translate } from '@vitalets/google-translate-api';
+import type { CacheType, Interaction, Message } from 'discord.js';
+import {
+  ApplicationCommandOptionType,
+  Client,
+  Events,
+  GatewayIntentBits,
+  GuildMember,
+} from 'discord.js';
+import { getLogger } from 'src/utils/logger';
 
+import { GeminiService } from '../bot/gemini.service';
 // import { GPTService } from '../bot/gpt.service';
 import { TextToImageService } from '../bot/text-to-image.service';
-import { GeminiService } from '../bot/gemini.service';
 
-const logger = new Logger('DiscordBot');
+const logger = getLogger('DiscordBot');
 
 @Injectable()
 export class DiscordService {
   private backendUrl: string;
   private client: Client;
-  private discordClientSecret: string;
-  private discordBotMessage: string;
+  private clientSecret: string;
+  private message: string;
   constructor(
     private configService: ConfigService,
     // private readonly gptService: GPTService,
@@ -36,23 +33,17 @@ export class DiscordService {
   }
 
   async _init(): Promise<void> {
-    this.backendUrl = this.configService.get('app.backendUrl', {
+    this.backendUrl = this.configService.get('main.backendUrl', {
       infer: true,
     }) as string;
 
-    this.discordClientSecret = this.configService.get(
-      'discord.discordClientSecret',
-      {
-        infer: true,
-      },
-    ) as string;
+    this.clientSecret = this.configService.get('discord.clientSecret', {
+      infer: true,
+    }) as string;
 
-    this.discordBotMessage = this.configService.get(
-      'discord.discordBotMessage',
-      {
-        infer: true,
-      },
-    ) as string;
+    this.message = this.configService.get('discord.message', {
+      infer: true,
+    }) as string;
 
     this.client = new Client({
       intents: [
@@ -65,7 +56,7 @@ export class DiscordService {
     });
 
     this.client.on(Events.ClientReady, () => {
-      logger.log(`Bot is ready! Logged in as ${this.client.user?.tag}!`);
+      logger.info(`Bot is ready! Logged in as ${this.client.user?.tag}!`);
       this.client.application.commands.create({
         name: 'image',
         description: 'Generate an image by text',
@@ -98,9 +89,9 @@ export class DiscordService {
       }
     });
 
-    this.client.login(this.discordClientSecret);
+    this.client.login(this.clientSecret);
 
-    logger.log('Discord is ready!');
+    logger.info('Discord is ready!');
   }
 
   handleMessage = async ({ author, content, channel }: Message) => {
@@ -165,65 +156,32 @@ export class DiscordService {
       interaction.commandName === 'start' ||
       interaction.commandName === 'name'
     ) {
-      await interaction.reply(this.discordBotMessage);
+      await interaction.reply(this.message);
       return;
     }
 
     // Method 1: Send image address
-    // if (interaction.commandName === 'image') {
-    //   const question = interaction.options.getString('text');
-
-    //   // Defer the reply
-    //   await interaction.deferReply();
-
-    //   // Translate
-    //   const { text } = await translate(question, { to: 'en' });
-
-    //   const result = await this.textToImageService.ask(text);
-    //   if (result) {
-    //     const { imageName } = result;
-    //     let replyContent;
-    //     if (imageName === null) {
-    //       replyContent = 'Sorry, I was unable to generate the image.';
-    //     } else {
-    //       const imageUrl = this.backendUrl + '/' + imageName;
-    //       replyContent = { content: imageUrl, ephemeral: true };
-    //     }
-
-    //     // Edit the reply
-    //     await interaction.editReply(replyContent);
-    //     return;
-    //   } else {
-    //     await interaction.editReply(
-    //       'Sorry, I was unable to generate the image.',
-    //     );
-    //     return;
-    //   }
-    // }
-
-    // Method 2: Send image
     if (interaction.commandName === 'image') {
       const question = interaction.options.getString('text');
 
+      // Defer the reply
+      await interaction.deferReply();
+
       // Translate
       const { text } = await translate(question, { to: 'en' });
-      await interaction.deferReply();
 
       const result = await this.textToImageService.ask(text);
       if (result) {
-        const { imageName, imagePath } = result;
-        const options: BaseMessageOptions = {
-          files: [
-            {
-              attachment: imagePath,
-              name: imageName,
-            },
-          ],
-        };
+        const { imageUrl, imageName } = result;
+        let replyContent;
+        if (imageName === null) {
+          replyContent = 'Sorry, I was unable to generate the image.';
+        } else {
+          replyContent = { content: imageUrl, ephemeral: true };
+        }
 
-        const payload = new MessagePayload(interaction, options);
-
-        await interaction.editReply(payload);
+        // Edit the reply
+        await interaction.editReply(replyContent);
         return;
       } else {
         await interaction.editReply(
@@ -232,5 +190,37 @@ export class DiscordService {
         return;
       }
     }
+
+    // Method 2: Send image
+    // if (interaction.commandName === 'image') {
+    //   const question = interaction.options.getString('text');
+
+    //   // Translate
+    //   const { text } = await translate(question, { to: 'en' });
+    //   await interaction.deferReply();
+
+    //   const result = await this.textToImageService.ask(text);
+    //   if (result) {
+    //     const { imageName, imageUrl } = result;
+    //     const options: BaseMessageOptions = {
+    //       files: [
+    //         {
+    //           attachment: imageUrl,
+    //           name: imageName,
+    //         },
+    //       ],
+    //     };
+
+    //     const payload = new MessagePayload(interaction, options);
+
+    //     await interaction.editReply(payload);
+    //     return;
+    //   } else {
+    //     await interaction.editReply(
+    //       'Sorry, I was unable to generate the image.',
+    //     );
+    //     return;
+    //   }
+    // }
   }
 }

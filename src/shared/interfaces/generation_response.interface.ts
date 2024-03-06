@@ -1,4 +1,4 @@
-export interface GenerationResponse {
+export interface IGenerationResponse {
   artifacts: Array<{
     base64: string;
     seed: number;

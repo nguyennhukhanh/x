@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
+import { ServicesModule } from 'src/services/services.module';
 
-import { GPTService } from './gpt.service';
-import { BotController } from './bot.controller';
-import { TextToImageService } from './text-to-image.service';
 import { GeminiService } from './gemini.service';
+import { TextToImageService } from './text-to-image.service';
 
 @Module({
-  providers: [GPTService, TextToImageService, GeminiService],
-  controllers: [BotController],
-  exports: [GPTService, TextToImageService, GeminiService],
+  imports: [ServicesModule],
+  providers: [TextToImageService, GeminiService],
+  controllers: [],
+  exports: [TextToImageService, GeminiService],
 })
 export class BotModule {}
